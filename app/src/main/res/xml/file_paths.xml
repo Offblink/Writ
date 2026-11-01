@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 分享用 PNG 落 cacheDir/share/ -->
+    <cache-path
+        name="share"
+        path="share/" />
+</paths>

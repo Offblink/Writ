@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- web 层是固定的 M3 亮色（tokens.css 紫罗兰方案），原生强制 Light 保持一致；
+         系统栏透明 + 边到边，图标深色由 MainActivity 按亮底设定 -->
+    <style name="Theme.Writ" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

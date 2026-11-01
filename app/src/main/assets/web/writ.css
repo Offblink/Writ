@@ -1,0 +1,362 @@
+/* ============================================================
+   writ.css — Writ 主界面（M3 Expressive 皮，token 全在 tokens.css）
+   版式：topbar → 纸面预览（可滚动）→ 书写格 → 控制坞
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--m3-surface);
+  color: var(--m3-on-surface);
+  font-family: "Roboto", "HarmonyOS Sans SC", "MiSans", system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button { font: inherit; border: 0; background: none; color: inherit; cursor: pointer; }
+
+/* ---------- 顶栏 ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 6px;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.acts { display: flex; gap: 4px; }
+
+.ib {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  color: var(--m3-on-surface-variant);
+  transition: background .18s var(--damped), transform .18s var(--spring);
+}
+.ib:active { background: var(--m3-sc-high); transform: scale(.92); }
+.ib-accent { color: var(--m3-primary); font-weight: 700; }
+.ib:disabled { opacity: .35; pointer-events: none; }
+
+/* ---------- 纸面预览 ---------- */
+
+.paper-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 90px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  padding: 10px 12px;
+  transition: background .22s var(--damped);
+}
+.checker {
+  background:
+    conic-gradient(#E8E6EB 90deg, transparent 90deg 180deg, #E8E6EB 180deg 270deg, transparent 270deg) 0 0 / 22px 22px,
+    #F6F5F8;
+}
+.light { background: #FEF7FF; }
+.dark  { background: #211F26; }
+
+.paper-inner { margin: auto; }
+
+#paper {
+  display: block;
+  border-radius: 4px;
+  box-shadow: 0 4px 22px rgba(30, 30, 60, .16);
+}
+
+.hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  pointer-events: none;
+  color: var(--m3-on-surface-variant);
+}
+.hint b { font-size: 16px; color: var(--m3-on-surface); }
+.hint span { font-size: 12.5px; line-height: 1.7; opacity: .75; }
+.hint[hidden] { display: none; }
+
+/* ---------- 书写格 ---------- */
+
+.writer { padding: 8px 0 4px; }
+
+.box-wrap {
+  position: relative;
+  width: min(84vw, 340px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 28px;
+  background: #FFFFFF;
+  border: 1px solid var(--m3-outline-variant);
+  box-shadow: 0 2px 12px rgba(30, 30, 60, .08);
+  overflow: hidden;
+  transition: transform .18s var(--spring);
+}
+.box-wrap.shake { animation: shake .3s var(--damped); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  55% { transform: translateX(5px); }
+  80% { transform: translateX(-3px); }
+}
+
+#box { display: block; width: 100%; height: 100%; }
+
+/* ---------- 控制坞 ---------- */
+
+.dock {
+  padding: 6px 14px calc(env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swatches {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none;
+}
+.swatches::-webkit-scrollbar { display: none; }
+
+.swatch {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, .18);
+  position: relative;
+  transition: transform .18s var(--spring);
+}
+.swatch.active { transform: scale(1.12); }
+.swatch.active::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2.5px solid var(--m3-primary);
+}
+.swatch.custom { overflow: hidden; padding: 0; }
+.swatch.custom input {
+  position: absolute;
+  inset: -8px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+}
+
+.wctl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--m3-on-surface-variant);
+}
+.wctl input[type="range"] {
+  width: 84px;
+  accent-color: var(--m3-primary);
+}
+
+.row2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* M3 连接式分段按钮（button-group 同族） */
+.group {
+  flex: 1;
+  display: flex;
+  background: var(--m3-secondary-container);
+  border-radius: 14px;
+  overflow: hidden;
+  height: 46px;
+}
+.group button {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--m3-on-secondary-container);
+  transition: background .15s var(--damped);
+}
+.group button:active { background: rgba(29, 25, 43, .12); }
+
+/* M3 强调 FAB：主操作「下一个」 */
+.fab {
+  flex: 0 0 auto;
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 18px;
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(103, 80, 164, .35);
+  transition: transform .18s var(--spring), box-shadow .18s var(--damped);
+}
+.fab:active { transform: scale(.94); box-shadow: 0 2px 8px rgba(103, 80, 164, .3); }
+
+/* ---------- 选中字形菜单 ---------- */
+
+.glyph-menu {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 170px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--m3-sc);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(30, 30, 60, .22);
+  z-index: 30;
+  animation: pop-in .22s var(--spring);
+}
+.glyph-menu[hidden] { display: none; }
+.glyph-menu button {
+  padding: 9px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--m3-surface);
+  color: var(--m3-primary);
+}
+.glyph-menu button.danger { color: var(--m3-error); }
+
+@keyframes pop-in {
+  from { transform: translateX(-50%) translateY(10px) scale(.9); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+/* ---------- 导出浮层 ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 18, 26, .55);
+  animation: fade-in .22s var(--damped);
+}
+.overlay[hidden] { display: none; }
+
+.ov-paper {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  padding: 20px;
+}
+.ov-paper canvas {
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .4);
+  animation: zoom-in .28s cubic-bezier(.2, 0, 0, 1);
+}
+
+.ov-menu {
+  background: var(--m3-surface);
+  border-radius: 28px 28px 0 0;
+  padding: 14px 16px calc(env(safe-area-inset-bottom) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: sheet-up .28s cubic-bezier(.2, 0, 0, 1);
+}
+.ov-menu button {
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--m3-on-surface);
+  transition: background .15s var(--damped);
+}
+.ov-menu button:active { background: var(--m3-sc-high); }
+.ov-menu .ov-main {
+  background: var(--m3-primary);
+  color: var(--m3-on-primary);
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+.ov-menu .ov-close { text-align: center; color: var(--m3-on-surface-variant); }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoom-in { from { transform: scale(.86); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes sheet-up { from { transform: translateY(40%); } to { transform: translateY(0); } }
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 190px);
+  transform: translateX(-50%);
+  padding: 11px 20px;
+  border-radius: 22px;
+  background: #322F35;
+  color: #F5EFF7;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 60;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .3);
+  animation: fade-in .18s var(--damped);
+  pointer-events: none;
+  max-width: 86vw;
+  text-align: center;
+}
+.toast[hidden] { display: none; }
+
+/* ---------- 飞行字形（下一个 → 入列） ---------- */
+
+.flyer {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform-origin: top left;
+  border-radius: 4px;
+}
+
+/* 系统减动效：飞行与抖动一并撤掉（tokens.css 已压 transition/animation） */
+@media (prefers-reduced-motion: reduce) {
+  .flyer { display: none; }
+}

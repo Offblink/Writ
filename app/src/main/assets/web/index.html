@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Writ</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="writ.css">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand">Writ</span>
+  <div class="acts">
+    <button id="bgToggle" class="ib" aria-label="切换预览底色">◧</button>
+    <button id="doneBtn" class="ib ib-accent" aria-label="完成并导出" disabled>✓</button>
+    <button id="resetBtn" class="ib" aria-label="清空重来">↺</button>
+  </div>
+</header>
+
+<main class="paper-wrap checker" id="paperWrap">
+  <div class="paper-inner">
+    <canvas id="paper"></canvas>
+  </div>
+  <div class="hint" id="paperHint">
+    <b>写下的每一笔，都排在这里</b>
+    <span>写完一个字点「下一个」，太宽会自动换行<br>点已写的字可以删除或重写</span>
+  </div>
+</main>
+
+<section class="writer">
+  <div class="box-wrap" id="boxWrap">
+    <canvas id="box"></canvas>
+  </div>
+</section>
+
+<footer class="dock">
+  <div class="row1">
+    <div class="swatches" id="swatches"></div>
+    <label class="wctl">粗
+      <input type="range" id="penWidth" min="4" max="30" value="13">
+    </label>
+  </div>
+  <div class="row2">
+    <div class="group">
+      <button id="undoStrokeBtn">撤销笔画</button>
+      <button id="backspaceBtn">退格</button>
+      <button id="spaceBtn">空格</button>
+      <button id="breakBtn">换行</button>
+    </div>
+    <button id="nextBtn" class="fab">下一个</button>
+  </div>
+</footer>
+
+<div class="glyph-menu" id="glyphMenu" hidden>
+  <button id="redoSelected">重写这个字</button>
+  <button id="delSelected" class="danger">删除</button>
+</div>
+
+<div class="overlay" id="exportOverlay" hidden>
+  <div class="ov-paper checker">
+    <canvas id="exportCanvas"></canvas>
+  </div>
+  <div class="ov-menu">
+    <button class="ov-main" data-act="share">分享给…</button>
+    <button data-act="save">存入相册 · Pictures/Writ</button>
+    <button data-act="copy">复制图片（去聊天框粘贴）</button>
+    <button class="ov-close" data-act="close">返回继续写</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="engine.js"></script>
+<script src="pen.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
