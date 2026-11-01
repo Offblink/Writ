@@ -103,6 +103,24 @@
     ctx.setLineDash([]);
   }
 
+  /* ---------- 编辑撤销栈（退格/空格/换行可撤） ---------- */
+
+  const editUndo = []; // {kind:'del', index, item} | {kind:'add', index}
+
+  function pushDel(index) { editUndo.push({ kind: 'del', index: index, item: items[index] }); }
+  function pushAdd(index) { editUndo.push({ kind: 'add', index: index }); }
+
+  function undoEdit() {
+    const e = editUndo.pop();
+    if (!e) { toast('没有可撤销的操作'); return; }
+    if (e.kind === 'del') items.splice(e.index, 0, e.item);
+    else items.splice(e.index, 1);
+    selected = null;
+    glyphMenu.hidden = true;
+    render();
+    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
   /* ---------- 提交 / 飞行 ---------- */
 
   function commitGlyph() {
@@ -128,11 +146,13 @@
 
   $('#collapseBox').addEventListener('click', () => {
     document.body.classList.add('preview');
+    $('#undoBtn').textContent = '撤销'; // 预览态：撤编辑操作
     requestAnimationFrame(render);
   });
 
   $('#expandBar').addEventListener('click', () => {
     document.body.classList.remove('preview');
+    $('#undoBtn').textContent = '撤销笔画'; // 书写态：撤笔画
     requestAnimationFrame(render);
   });
 
@@ -196,26 +216,33 @@
   });
 
   $('#delSelected').addEventListener('click', () => {
-    if (selected) removeItem(selected);
+    if (!selected) return;
+    pushDel(items.indexOf(selected));
+    removeItem(selected);
   });
 
   /* ---------- 底部按钮 ---------- */
 
   $('#nextBtn').addEventListener('click', commitGlyph);
 
-  $('#undoStrokeBtn').addEventListener('click', () => {
-    if (!pad.undo()) toast('没有可撤销的笔画');
+  $('#undoBtn').addEventListener('click', () => {
+    // 预览态：撤的是编辑操作（退格/空格/换行）；书写态：撤的是笔画
+    if (document.body.classList.contains('preview')) undoEdit();
+    else if (!pad.undo()) toast('没有可撤销的笔画');
   });
 
   $('#backspaceBtn').addEventListener('click', () => {
-    if (selected) { removeItem(selected); return; }
+    if (selected) { pushDel(items.indexOf(selected)); removeItem(selected); return; }
     if (!items.length) { toast('还没写内容'); return; }
+    pushDel(items.length - 1);
     items.pop();
     render();
+    if (navigator.vibrate) navigator.vibrate(8);
   });
 
   $('#spaceBtn').addEventListener('click', () => {
     items.push({ type: 'gap' });
+    pushAdd(items.length - 1);
     selected = null;
     glyphMenu.hidden = true;
     render();
@@ -224,6 +251,7 @@
 
   $('#breakBtn').addEventListener('click', () => {
     items.push({ type: 'break' });
+    pushAdd(items.length - 1);
     selected = null;
     glyphMenu.hidden = true;
     render();
@@ -240,20 +268,22 @@
   $('#cfOk').addEventListener('click', () => {
     $('#confirmDialog').hidden = true;
     items.length = 0;
+    editUndo.length = 0;
     pad.clear();
     selected = null;
     glyphMenu.hidden = true;
     render();
   });
 
-  // 底色切换：预览态顶栏 ◧，纸面与导出浮层同步跟随
+  // 底色两态：透明棋盘 ⇄ 纯白底。黑底已砍（微信深色聊天里黑墨不可读）；
+  // 白底模式导出真带白底（见 doneBtn），透明模式导出带 alpha 的 PNG
   let bgMode = 0;
   $('#bgToggle').addEventListener('click', () => {
-    bgMode = (bgMode + 1) % 3;
-    const cls = ['checker', 'light', 'dark'][bgMode];
-    paperWrap.classList.remove('checker', 'light', 'dark');
+    bgMode = (bgMode + 1) % 2;
+    const cls = ['checker', 'light'][bgMode];
+    paperWrap.classList.remove('checker', 'light');
     paperWrap.classList.add(cls);
-    overlay.querySelector('.ov-paper').classList.remove('checker', 'light', 'dark');
+    overlay.querySelector('.ov-paper').classList.remove('checker', 'light');
     overlay.querySelector('.ov-paper').classList.add(cls);
   });
 
@@ -268,7 +298,17 @@
   doneBtn.addEventListener('click', () => {
     if (!lastLayout || !lastLayout.glyphCount) return;
     const scale = Math.min(1, EXPORT_MAX_W / lastLayout.width);
-    WritEngine.compose(exportCanvas, lastLayout, scale);
+    const tmp = document.createElement('canvas');
+    WritEngine.compose(tmp, lastLayout, scale);
+    exportCanvas.width = tmp.width;
+    exportCanvas.height = tmp.height;
+    const ctx = exportCanvas.getContext('2d');
+    if (paperWrap.classList.contains('light')) {
+      // 白底模式：导出真白底——透明 PNG 在微信深色聊天里会衬黑底，白底图不受影响
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, tmp.width, tmp.height);
+    }
+    ctx.drawImage(tmp, 0, 0);
     exportDataUrl = exportCanvas.toDataURL('image/png');
     overlay.hidden = false;
   });

@@ -26,17 +26,27 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
 
 /* ---------- 顶栏 ---------- */
 
+@font-face {
+  font-family: 'Caveat';
+  src: url('fonts/caveat-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 10px) 16px 6px;
+  padding: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 4px) 16px 6px;
 }
 
 .brand {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: .5px;
+  font-family: 'Caveat', 'Segoe Script', cursive;
+  font-size: 52px; /* 手写当图用：放大占位，吃掉顶部留白（用户定论） */
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.05;
+  padding-top: 6px;
 }
 
 .acts { display: flex; gap: 4px; }
@@ -72,8 +82,7 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
     conic-gradient(#E8E6EB 90deg, transparent 90deg 180deg, #E8E6EB 180deg 270deg, transparent 270deg) 0 0 / 22px 22px,
     #F6F5F8;
 }
-.light { background: #FEF7FF; }
-.dark  { background: #211F26; }
+.light { background: #FFFFFF; } /* 白底=纯白，且导出真带白底（app.js 合成） */
 
 .paper-inner { margin: auto; }
 
@@ -198,25 +207,15 @@ body.preview .box-wrap {
   flex-direction: column;
   gap: 10px;
 }
-body.preview .pen-rows, body.preview .write-row { display: none; }
-body:not(.preview) .edit-group { display: none; }
+body.preview .pen-rows { display: none; }
+body.preview #nextBtn { display: none; } /* 预览态：FAB 让位，四键组铺满 */
 
-.write-row { display: flex; align-items: center; gap: 10px; }
+/* 书写态一行：[撤销笔画|退格|空格|换行] + 下一个 并排（用户定论：并排，别独占一行） */
+.action-row { display: flex; align-items: center; gap: 10px; }
 
-.undo-btn {
-  flex: 1;
-  height: 52px;
-  border-radius: 18px;
-  background: var(--m3-secondary-container);
-  color: var(--m3-on-secondary-container);
-  font-size: 14px;
-  font-weight: 600;
-  transition: transform .18s var(--spring), background .15s var(--damped);
-}
-.undo-btn:active { transform: scale(.96); background: rgba(29, 25, 43, .14); }
-
-/* 预览态编辑组：每个键纸面立刻重排（换行不再是"看不见的状态变化"） */
+/* 编辑组四键两态共用：书写态首键=撤销笔画，预览态首键=撤销（编辑栈）——label 由 JS 切 */
 .edit-group {
+  flex: 1;
   display: flex;
   background: var(--m3-secondary-container);
   border-radius: 16px;
@@ -226,7 +225,7 @@ body:not(.preview) .edit-group { display: none; }
 }
 .edit-group button {
   flex: 1;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--m3-on-secondary-container);
   transition: background .15s var(--damped);
