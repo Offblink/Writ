@@ -201,20 +201,20 @@ body:not(.preview) .expand-bar { display: none; }
 
 .swatch {
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 1.5px solid rgba(0, 0, 0, .18);
   position: relative;
   transition: transform .18s var(--spring);
 }
-.swatch.active { transform: scale(1.12); }
+.swatch.active { transform: scale(1.08); }
 .swatch.active::after {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -2px; /* 环外缘只出 2px（原 5px 曾顶到容器边） */
   border-radius: 50%;
-  border: 2.5px solid var(--m3-primary);
+  border: 2px solid var(--m3-primary);
 }
 .swatch.custom { overflow: hidden; padding: 0; }
 .swatch.custom input {
