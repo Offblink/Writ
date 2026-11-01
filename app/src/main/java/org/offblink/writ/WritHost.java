@@ -14,7 +14,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.view.View;
 import android.webkit.JavascriptInterface;
-import android.widget.Toast;
+import android.webkit.WebView;
 
 import androidx.core.content.FileProvider;
 
@@ -24,14 +24,25 @@ import java.io.OutputStream;
 
 /**
  * WebView 桥：web 层把合成好的透明 PNG 以 base64 交来，这里负责三件出口。
- * JavascriptInterface 方法跑在非 UI 线程，Toast/刷新媒体库需自行切回。
+ * JavascriptInterface 方法跑在非 UI 线程；操作结果统一回吐给 web 层 toast 展示
+ * （拒绝原生 Toast——UI 一律由 web 层自绘）。唯一例外：分享面板本身是
+ * Android 应用交接台，分享到微信/QQ 必经，无 web 替代。
  */
 public class WritHost {
 
     private final Activity act;
+    private final WebView web;
 
-    WritHost(Activity act) {
+    WritHost(Activity act, WebView web) {
         this.act = act;
+        this.web = web;
+    }
+
+    /** 结果回吐 web 层：调用页面里的 WritToast(msg)（app.js 已挂全局） */
+    private void report(final String msg) {
+        final String safe = msg.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n");
+        act.runOnUiThread(() -> web.evaluateJavascript(
+                "window.WritToast && window.WritToast('" + safe + "')", null));
     }
 
     /** dataURL → Bitmap；失败返回 null */
@@ -46,16 +57,12 @@ public class WritHost {
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opts);
     }
 
-    private void toast(final String msg) {
-        act.runOnUiThread(() -> Toast.makeText(act, msg, Toast.LENGTH_SHORT).show());
-    }
-
     /** 存相册：29+ 走 MediaStore（无需权限），26~28 写公共 Pictures/Writ */
     @JavascriptInterface
     public void savePng(String dataUrl) {
         Bitmap bmp = decodeDataUrl(dataUrl);
         if (bmp == null) {
-            toast("图片解码失败");
+            report("图片解码失败");
             return;
         }
         String name = "Writ_" + System.currentTimeMillis() + ".png";
@@ -68,7 +75,7 @@ public class WritHost {
                 cv.put(MediaStore.Images.Media.IS_PENDING, 1);
                 Uri uri = act.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv);
                 if (uri == null) {
-                    toast("存相册失败");
+                    report("存相册失败");
                     return;
                 }
                 try (OutputStream os = act.getContentResolver().openOutputStream(uri)) {
@@ -81,7 +88,7 @@ public class WritHost {
                 File dir = new File(Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_PICTURES), "Writ");
                 if (!dir.exists() && !dir.mkdirs()) {
-                    toast("无法创建相册目录");
+                    report("无法创建相册目录");
                     return;
                 }
                 File out = new File(dir, name);
@@ -90,9 +97,9 @@ public class WritHost {
                 }
                 MediaStore.Images.Media.insertImage(act.getContentResolver(), out.getAbsolutePath(), name, null);
             }
-            toast("已存入相册 · Pictures/Writ");
+            report("已存入相册 · Pictures/Writ");
         } catch (Exception e) {
-            toast("存相册失败：" + e.getMessage());
+            report("存相册失败：" + e.getMessage());
         }
     }
 
@@ -101,7 +108,7 @@ public class WritHost {
     public void sharePng(String dataUrl) {
         Bitmap bmp = decodeDataUrl(dataUrl);
         if (bmp == null) {
-            toast("图片解码失败");
+            report("图片解码失败");
             return;
         }
         try {
@@ -114,11 +121,11 @@ public class WritHost {
                 try {
                     act.startActivity(Intent.createChooser(intent, "分享 Writ 图片"));
                 } catch (Exception e) {
-                    Toast.makeText(act, "没有可分享的应用", Toast.LENGTH_SHORT).show();
+                    report("没有可分享的应用");
                 }
             });
         } catch (Exception e) {
-            toast("分享失败：" + e.getMessage());
+            report("分享失败：" + e.getMessage());
         }
     }
 
@@ -127,7 +134,7 @@ public class WritHost {
     public void copyPng(String dataUrl) {
         Bitmap bmp = decodeDataUrl(dataUrl);
         if (bmp == null) {
-            toast("图片解码失败");
+            report("图片解码失败");
             return;
         }
         try {
@@ -135,9 +142,9 @@ public class WritHost {
             ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newUri(act.getContentResolver(), "Writ 图片", uri);
             cm.setPrimaryClip(clip);
-            toast("图片已复制，去聊天框长按粘贴");
+            report("图片已复制，去聊天框长按粘贴");
         } catch (Exception e) {
-            toast("复制失败：" + e.getMessage());
+            report("复制失败：" + e.getMessage());
         }
     }
 

@@ -13,8 +13,8 @@
   <span class="brand">Writ</span>
   <div class="acts">
     <button id="bgToggle" class="ib" aria-label="切换预览底色">◧</button>
-    <button id="doneBtn" class="ib ib-accent" aria-label="完成并导出" disabled>✓</button>
     <button id="resetBtn" class="ib" aria-label="清空重来">↺</button>
+    <button id="doneBtn" class="ib ib-accent" aria-label="完成并导出" disabled>✓</button>
   </div>
 </header>
 
@@ -42,20 +42,23 @@
 </section>
 
 <footer class="dock">
-  <div class="row1">
-    <div class="swatches" id="swatches"></div>
-    <label class="wctl">粗
-      <input type="range" id="penWidth" min="4" max="30" value="13">
-    </label>
-  </div>
-  <div class="row2">
-    <div class="group">
-      <button id="undoStrokeBtn">撤销笔画</button>
-      <button id="backspaceBtn">退格</button>
-      <button id="spaceBtn">空格</button>
-      <button id="breakBtn">换行</button>
+  <div class="pen-rows">
+    <div class="row1">
+      <div class="swatches" id="swatches"></div>
     </div>
+    <div class="pen-row">
+      <span>粗</span>
+      <input type="range" id="penWidth" min="4" max="30" value="13">
+    </div>
+  </div>
+  <div class="write-row">
+    <button id="undoStrokeBtn" class="undo-btn">撤销笔画</button>
     <button id="nextBtn" class="fab">下一个</button>
+  </div>
+  <div class="edit-group">
+    <button id="backspaceBtn">退格</button>
+    <button id="spaceBtn">空格</button>
+    <button id="breakBtn">换行</button>
   </div>
 </footer>
 
@@ -73,6 +76,27 @@
     <button data-act="save">存入相册 · Pictures/Writ</button>
     <button data-act="copy">复制图片（去聊天框粘贴）</button>
     <button class="ov-close" data-act="close">返回继续写</button>
+  </div>
+</div>
+
+<div class="color-picker" id="colorPicker" hidden>
+  <div class="cp-title">自定义颜色</div>
+  <canvas id="hueBar" class="cp-bar"></canvas>
+  <canvas id="lightBar" class="cp-bar"></canvas>
+  <div class="cp-actions">
+    <div class="cp-preview" id="cpSwatch"></div>
+    <button id="cpCancel">取消</button>
+    <button id="cpOk">确定</button>
+  </div>
+</div>
+
+<div class="confirm" id="confirmDialog" hidden>
+  <div class="confirm-card">
+    <div class="confirm-title">清空所有已写内容？已写的字将全部丢失。</div>
+    <div class="confirm-btns">
+      <button id="cfCancel">取消</button>
+      <button id="cfOk" class="danger">清空</button>
+    </div>
   </div>
 </div>
 

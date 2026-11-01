@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         web.setWebViewClient(new WebViewClient());
-        web.addJavascriptInterface(new WritHost(this), "Writ");
+        web.addJavascriptInterface(new WritHost(this, web), "Writ");
 
         web.loadUrl("file:///android_asset/web/index.html");
     }

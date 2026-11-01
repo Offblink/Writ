@@ -62,8 +62,7 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
   position: relative;
   flex: 1;
   min-height: 90px;
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow: hidden; /* 禁滚：整句 contain 适配一屏全见，滚动窗口里长高=看不见=无响应 */
   display: flex;
   padding: 10px 12px;
   transition: background .22s var(--damped);
@@ -109,12 +108,20 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
   flex-direction: column;
   justify-content: center;
 }
-/* 书写态（默认）：预览隐藏，书写格占满余高；收起态见 body.preview */
+/* 书写态（默认）：预览隐藏，书写格占满余高；收起态见 body.preview。
+   收起/展开走 max-height+opacity+scale 弹簧过渡，纸面与展开条淡入 */
 body:not(.preview) .paper-wrap { display: none; }
-body.preview .box-wrap { display: none; }
+body.preview .paper-wrap { animation: fade-in .3s var(--damped) .1s both; }
 body.preview .writer { flex: 0 0 auto; justify-content: flex-start; }
-body.preview .expand-bar { display: flex; }
+body.preview .expand-bar { display: flex; animation: bar-in .3s var(--spring) .12s both; }
 body:not(.preview) .expand-bar { display: none; }
+body.preview .box-wrap {
+  max-height: 0;
+  opacity: 0;
+  transform: scale(.86);
+  border-width: 0;
+  pointer-events: none;
+}
 
 /* 收起按钮：书写格右上角 */
 .box-toggle {
@@ -162,7 +169,9 @@ body:not(.preview) .expand-bar { display: none; }
   border: 1px solid var(--m3-outline-variant);
   box-shadow: 0 2px 12px rgba(30, 30, 60, .08);
   overflow: hidden;
-  transition: transform .18s var(--spring);
+  max-height: 420px;
+  transition: max-height .32s var(--spring), opacity .22s var(--damped),
+    transform .32s var(--spring), border-width .2s var(--damped);
 }
 .box-wrap.shake { animation: shake .3s var(--damped); }
 @keyframes shake {
@@ -175,6 +184,7 @@ body:not(.preview) .expand-bar { display: none; }
 #box { display: block; width: 100%; height: 100%; }
 
 /* ---------- 控制坞 ---------- */
+/* 书写态：色板 + 笔宽 + [撤销笔画 | 下一个]；预览态：[退格 空格 换行]（编辑见纸面） */
 
 .dock {
   padding: 6px 14px calc(env(safe-area-inset-bottom) + 12px);
@@ -183,26 +193,60 @@ body:not(.preview) .expand-bar { display: none; }
   gap: 10px;
 }
 
-.row1 {
+.pen-rows {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
 }
+body.preview .pen-rows, body.preview .write-row { display: none; }
+body:not(.preview) .edit-group { display: none; }
+
+.write-row { display: flex; align-items: center; gap: 10px; }
+
+.undo-btn {
+  flex: 1;
+  height: 52px;
+  border-radius: 18px;
+  background: var(--m3-secondary-container);
+  color: var(--m3-on-secondary-container);
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform .18s var(--spring), background .15s var(--damped);
+}
+.undo-btn:active { transform: scale(.96); background: rgba(29, 25, 43, .14); }
+
+/* 预览态编辑组：每个键纸面立刻重排（换行不再是"看不见的状态变化"） */
+.edit-group {
+  display: flex;
+  background: var(--m3-secondary-container);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 52px;
+  animation: bar-in .28s var(--spring);
+}
+.edit-group button {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--m3-on-secondary-container);
+  transition: background .15s var(--damped);
+}
+.edit-group button:active { background: rgba(29, 25, 43, .12); }
 
 .swatches {
   flex: 1;
   display: flex;
-  gap: 10px;
+  gap: 8px; /* 9×28+8×8=316 < 332（360 视口−两侧 14 padding），全部露面 */
   overflow-x: auto;
-  padding: 8px 4px; /* 纵向 8px ≥ active 素环溢出的 5px，防滚动容器上下裁环 */
+  padding: 8px 4px; /* 纵向 8px ≥ active 素环溢出的 2px，防滚动容器上下裁环 */
   scrollbar-width: none;
 }
 .swatches::-webkit-scrollbar { display: none; }
 
 .swatch {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1.5px solid rgba(0, 0, 0, .18);
   position: relative;
@@ -216,53 +260,20 @@ body:not(.preview) .expand-bar { display: none; }
   border-radius: 50%;
   border: 2px solid var(--m3-primary);
 }
-.swatch.custom { overflow: hidden; padding: 0; }
-.swatch.custom input {
-  position: absolute;
-  inset: -8px;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  background: none;
-}
-
-.wctl {
-  flex: 0 0 auto;
+/* 笔宽独立一行拉满：粗细与颜色同为笔的属性，排在色板正下方 */
+.pen-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  padding: 0 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--m3-on-surface-variant);
 }
-.wctl input[type="range"] {
-  width: 84px;
+.pen-row input[type="range"] {
+  flex: 1;
   accent-color: var(--m3-primary);
 }
-
-.row2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* M3 连接式分段按钮（button-group 同族） */
-.group {
-  flex: 1;
-  display: flex;
-  background: var(--m3-secondary-container);
-  border-radius: 14px;
-  overflow: hidden;
-  height: 46px;
-}
-.group button {
-  flex: 1;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--m3-on-secondary-container);
-  transition: background .15s var(--damped);
-}
-.group button:active { background: rgba(29, 25, 43, .12); }
 
 /* M3 强调 FAB：主操作「下一个」 */
 .fab {
@@ -393,6 +404,86 @@ body:not(.preview) .expand-bar { display: none; }
   text-align: center;
 }
 .toast[hidden] { display: none; }
+
+/* ---------- 顶栏按态收敛 ---------- */
+/* 书写态：✓ + ↺（两个）；预览态：✓ + ◧（两个）。✓ 恒显 */
+body:not(.preview) #bgToggle { display: none; }
+body.preview #resetBtn { display: none; }
+
+/* ---------- 自定义取色盘（纯 web，拒绝原生 input[type=color]）---------- */
+.color-picker {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 176px);
+  transform: translateX(-50%);
+  width: min(86vw, 320px);
+  background: var(--m3-surface);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 30px rgba(30, 30, 60, .28);
+  z-index: 45;
+  animation: pop-in .22s var(--spring);
+}
+.color-picker[hidden] { display: none; }
+.cp-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.cp-bar {
+  display: block;
+  width: 100%;
+  height: 22px;
+  border-radius: 11px;
+  margin-bottom: 10px;
+  touch-action: none;
+}
+.cp-actions { display: flex; align-items: center; gap: 8px; }
+.cp-preview {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, .18);
+  margin-right: auto;
+}
+.cp-actions button {
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+#cpCancel { color: var(--m3-on-surface-variant); }
+#cpOk { background: var(--m3-primary); color: var(--m3-on-primary); }
+
+/* ---------- 清空确认（纯 web，拒绝原生 confirm）---------- */
+.confirm {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 26, .5);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: fade-in .18s var(--damped);
+}
+.confirm[hidden] { display: none; }
+.confirm-card {
+  width: min(80vw, 300px);
+  background: var(--m3-surface);
+  border-radius: 28px;
+  padding: 22px 22px 14px;
+  animation: zoom-in .22s cubic-bezier(.2, 0, 0, 1);
+}
+.confirm-title { font-size: 15px; font-weight: 600; line-height: 1.5; }
+.confirm-btns { display: flex; justify-content: flex-end; gap: 4px; margin-top: 16px; }
+.confirm-btns button {
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--m3-primary);
+}
+.confirm-btns button.danger { color: var(--m3-error); }
+
+@keyframes bar-in {
+  from { opacity: 0; transform: translateY(10px) scale(.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ---------- 飞行字形（下一个 → 入列） ---------- */
 

@@ -33,7 +33,12 @@ window.WritEngine = (function () {
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (it.type === 'break') {
-        if (row.items.length) { row = newRow(); rows.push(row); }
+        // 连按换行要能叠出多个空行（用户反馈：三行之后再按无响应）。
+        // 仅当整篇还没内容时的引导 break 才忽略（没东西可断）。
+        if (row.items.length || rows.length > 1) {
+          row = newRow();
+          rows.push(row);
+        }
         continue;
       }
       const w = it.type === 'gap' ? box * GAP_W_RATIO : it.w;
@@ -50,8 +55,9 @@ window.WritEngine = (function () {
       }
     }
 
-    while (rows.length && !rows[rows.length - 1].items.length) rows.pop();
-    if (!rows.length) return { width: 0, height: 0, placements: [], glyphCount: 0 };
+    // 有字才谈排版；全空返回零尺寸
+    const hasGlyph = rows.some(r => r.items.some(e => e.item.type === 'glyph'));
+    if (!hasGlyph) return { width: 0, height: 0, placements: [], glyphCount: 0 };
 
     let contentW = 0;
     let y = margin;
@@ -59,8 +65,9 @@ window.WritEngine = (function () {
     const placements = [];
     for (let r = 0; r < rows.length; r++) {
       const rr = rows[r];
-      // 全空格/异常小行给个最小行高，避免 0 高行吃掉行距
-      const h = Math.max(rr.ascent + rr.descent, box * 0.1);
+      // 行高：有内容取 max(ascent+descent, 0.1盒)；末尾空行（换行键按下）给一整行 0.75 盒——
+      // 不可见的状态变化等于没按（用户实测反馈：换行"无响应"）
+      const h = rr.items.length ? Math.max(rr.ascent + rr.descent, box * 0.1) : box * 0.75;
       for (let k = 0; k < rr.items.length; k++) {
         const e = rr.items[k];
         const isGlyph = e.item.type === 'glyph';

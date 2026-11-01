@@ -19,7 +19,6 @@
   let selected = null;              // 选中的 glyph 条目
   let lastLayout = null;
   let paperCssScale = 1;
-  let bgMode = 0;                   // 0 棋盘 / 1 浅色 / 2 深色
   let exportDataUrl = null;
   let toastTimer = 0;
 
@@ -44,15 +43,12 @@
       b.addEventListener('click', () => pickColor(hex, b));
       wrap.appendChild(b);
     });
-    const custom = document.createElement('label');
+    const custom = document.createElement('button');
     custom.className = 'swatch custom';
+    custom.id = 'customSwatch';
     custom.style.background = 'conic-gradient(#B3261E, #9A6400, #006D3B, #00639A, #6750A4, #B3261E)';
     custom.title = '自定义颜色';
-    const input = document.createElement('input');
-    input.type = 'color';
-    input.value = '#1D1B20';
-    input.addEventListener('input', () => pickColor(input.value, custom));
-    custom.appendChild(input);
+    custom.addEventListener('click', () => openColorPicker(custom));
     wrap.appendChild(custom);
   }
 
@@ -81,12 +77,16 @@
       paper.style.height = '0px';
       return;
     }
-    const cssW = Math.max(120, Math.min(paperWrap.clientWidth - 28, 520)); // 书写态下纸面隐藏（clientWidth 0），钳出个非零值即可
+    // 整句一屏全见（用户定论：滚动窗口里长高=看不见=无响应）——contain 缩放，禁止滚动
+    const availW = Math.max(80, paperWrap.clientWidth - 28);
+    const availH = Math.max(80, paperWrap.clientHeight - 28);
+    const FIT_CAP = 340 / 1024; // 缩放上限≈书写格观感，单字不撑满全屏
+    const fit = Math.min(availW / layout.width, availH / layout.height, FIT_CAP);
     const dpr = window.devicePixelRatio || 1;
-    WritEngine.compose(paper, layout, cssW * dpr / layout.width);
-    paper.style.width = cssW + 'px';
-    paper.style.height = (layout.height * cssW / layout.width) + 'px';
-    paperCssScale = cssW / layout.width;
+    WritEngine.compose(paper, layout, fit * dpr);
+    paper.style.width = Math.round(layout.width * fit) + 'px';
+    paper.style.height = Math.round(layout.height * fit) + 'px';
+    paperCssScale = fit;
     drawSelection();
   }
 
@@ -219,6 +219,7 @@
     selected = null;
     glyphMenu.hidden = true;
     render();
+    if (navigator.vibrate) navigator.vibrate(8);
   });
 
   $('#breakBtn').addEventListener('click', () => {
@@ -226,11 +227,18 @@
     selected = null;
     glyphMenu.hidden = true;
     render();
+    if (navigator.vibrate) navigator.vibrate(8);
   });
 
   $('#resetBtn').addEventListener('click', () => {
     if (!items.length && pad.isEmpty()) return;
-    if (!window.confirm('清空所有已写内容？')) return;
+    $('#confirmDialog').hidden = false;
+  });
+
+  $('#cfCancel').addEventListener('click', () => { $('#confirmDialog').hidden = true; });
+
+  $('#cfOk').addEventListener('click', () => {
+    $('#confirmDialog').hidden = true;
     items.length = 0;
     pad.clear();
     selected = null;
@@ -238,10 +246,15 @@
     render();
   });
 
+  // 底色切换：预览态顶栏 ◧，纸面与导出浮层同步跟随
+  let bgMode = 0;
   $('#bgToggle').addEventListener('click', () => {
     bgMode = (bgMode + 1) % 3;
+    const cls = ['checker', 'light', 'dark'][bgMode];
     paperWrap.classList.remove('checker', 'light', 'dark');
-    paperWrap.classList.add(['checker', 'light', 'dark'][bgMode]);
+    paperWrap.classList.add(cls);
+    overlay.querySelector('.ov-paper').classList.remove('checker', 'light', 'dark');
+    overlay.querySelector('.ov-paper').classList.add(cls);
   });
 
   $('#penWidth').addEventListener('input', () => {
@@ -285,8 +298,85 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toastEl.hidden = true; }, 1900);
   }
+  /** 原生桥的结果回吐口（WritHost.report 调用）——提示一律走 web 自绘 toast */
+  window.WritToast = toast;
 
   window.addEventListener('resize', render);
+
+  /* ---------- 自定义取色盘（纯 web 色相/明度双滑条，拒绝原生控件） ---------- */
+
+  const picker = $('#colorPicker');
+  const hueBar = $('#hueBar');
+  const lightBar = $('#lightBar');
+  const cpSwatch = $('#cpSwatch');
+  let cpH = 260;    // 初始近墨黑
+  let cpL = 40;
+  let cpTarget = null;
+
+  function hsl2hex(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
+    return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  function paintBars() {
+    const w = hueBar.clientWidth || 280;
+    hueBar.width = w * 2;
+    hueBar.height = 44;
+    lightBar.width = w * 2;
+    lightBar.height = 44;
+    const hctx = hueBar.getContext('2d');
+    const hg = hctx.createLinearGradient(0, 0, hueBar.width, 0);
+    for (let i = 0; i <= 12; i++) hg.addColorStop(i / 12, hsl2hex(i * 30, 100, 50));
+    hctx.fillStyle = hg;
+    hctx.fillRect(0, 0, hueBar.width, hueBar.height);
+    const lctx = lightBar.getContext('2d');
+    const lg = lctx.createLinearGradient(0, 0, lightBar.width, 0);
+    lg.addColorStop(0, '#000000');
+    lg.addColorStop(.5, hsl2hex(cpH, 100, 50));
+    lg.addColorStop(1, '#FFFFFF');
+    lctx.fillStyle = lg;
+    lctx.fillRect(0, 0, lightBar.width, lightBar.height);
+  }
+
+  function cpUpdate() {
+    cpSwatch.style.background = hsl2hex(cpH, 100, cpL);
+  }
+
+  function bindBar(canvas, apply) {
+    const drag = e => {
+      const r = canvas.getBoundingClientRect();
+      apply(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+      cpUpdate();
+    };
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+      drag(e);
+    });
+    canvas.addEventListener('pointermove', e => { if (e.buttons) drag(e); });
+  }
+
+  function openColorPicker(target) {
+    cpTarget = target;
+    picker.hidden = false;
+    requestAnimationFrame(() => { paintBars(); cpUpdate(); });
+  }
+
+  bindBar(hueBar, t => { cpH = t * 360; paintBars(); });
+  bindBar(lightBar, t => { cpL = t * 100; });
+
+  $('#cpCancel').addEventListener('click', () => { picker.hidden = true; });
+  $('#cpOk').addEventListener('click', () => {
+    picker.hidden = true;
+    if (!cpTarget) return;
+    const hex = hsl2hex(cpH, 100, cpL);
+    cpTarget.style.background = hex;
+    pickColor(hex, cpTarget);
+  });
 
   /* ---------- 启动 ---------- */
 
