@@ -18,6 +18,9 @@ import androidx.core.view.WindowCompat;
 public class MainActivity extends AppCompatActivity {
 
     private WebView web;
+    /** 原生缓存的安全区（insets 派发可能早于页面 JS 就绪，onPageFinished 后补注一次） */
+    private int safeTop;
+    private int safeBottom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +43,15 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                injectInsets(); // 立即补注缓存值
+                // 兜底"监听器从未触发"：强制重新派发一次 insets
+                view.post(() -> androidx.core.view.ViewCompat.requestApplyInsets(view));
+            }
+        });
         web.addJavascriptInterface(new WritHost(this, web), "Writ");
 
         // 安全区：老 WebView 的 env(safe-area-inset-*) 为 0（真机实测顶栏钻进状态栏），
@@ -48,13 +59,17 @@ public class MainActivity extends AppCompatActivity {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
             int sys = androidx.core.view.WindowInsetsCompat.Type.systemBars()
                     | androidx.core.view.WindowInsetsCompat.Type.displayCutout();
-            int top = insets.getInsets(sys).top;
-            int bottom = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars()).bottom;
-            web.evaluateJavascript("window.__setInsets&&window.__setInsets(" + top + "," + bottom + ")", null);
+            safeTop = insets.getInsets(sys).top;
+            safeBottom = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars()).bottom;
+            injectInsets();
             return insets;
         });
 
         web.loadUrl("file:///android_asset/web/index.html");
+    }
+
+    private void injectInsets() {
+        web.evaluateJavascript("window.__setInsets&&window.__setInsets(" + safeTop + "," + safeBottom + ")", null);
     }
 
     @Override
