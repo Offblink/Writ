@@ -5,7 +5,7 @@ window.WritPad = (function () {
   'use strict';
 
   const BOX = 1024;
-  const BASELINE = Math.round(BOX * 0.74); // 基线在格内 74% 高度
+  const BASELINE = Math.round(BOX / 2); // 基线居中（用户定论：虚线要上下左右居中的正中十字）
   const ALPHA_THRESHOLD = 16;              // 裁边的墨迹阈值（抗锯齿边缘不算）
 
   class Pad {

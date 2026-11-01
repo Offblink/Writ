@@ -30,7 +30,7 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top) + 10px) 16px 6px;
+  padding: calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 10px) 16px 6px;
 }
 
 .brand {
@@ -187,7 +187,7 @@ body.preview .box-wrap {
 /* 书写态：色板 + 笔宽 + [撤销笔画 | 下一个]；预览态：[退格 空格 换行]（编辑见纸面） */
 
 .dock {
-  padding: 6px 14px calc(env(safe-area-inset-bottom) + 12px);
+  padding: 6px 14px calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 12px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -295,7 +295,7 @@ body:not(.preview) .edit-group { display: none; }
 .glyph-menu {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 170px);
+  bottom: calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 170px);
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
@@ -354,7 +354,7 @@ body:not(.preview) .edit-group { display: none; }
 .ov-menu {
   background: var(--m3-surface);
   border-radius: 28px 28px 0 0;
-  padding: 14px 16px calc(env(safe-area-inset-bottom) + 16px);
+  padding: 14px 16px calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 16px);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -388,7 +388,7 @@ body:not(.preview) .edit-group { display: none; }
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 190px);
+  bottom: calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 190px);
   transform: translateX(-50%);
   padding: 11px 20px;
   border-radius: 22px;
@@ -414,7 +414,7 @@ body.preview #resetBtn { display: none; }
 .color-picker {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 176px);
+  bottom: calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 176px);
   transform: translateX(-50%);
   width: min(86vw, 320px);
   background: var(--m3-surface);

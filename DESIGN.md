@@ -81,6 +81,12 @@
 - 收起/展开弹簧动画（max-height+opacity+scale）；清空确认、取色盘全 web 自绘（拒绝原生控件）
 - 操作结果 toast 由原生桥回吐 web 层绘制；仅系统分享面板保留原生形态（平台约束，微信接收必经）
 
+## 交互（v1.3，2026-11-01 真机首装反馈）
+
+- 顶栏钻状态栏：老 WebView `env(safe-area-inset-*)` 返回 0 → 原生读 WindowInsets 注入
+  `--safe-top/--safe-bottom`（head 内联 `__setInsets` 预置），CSS 变量优先、env() 兜底
+- 书写格虚线改**正中十字**（基线 74%→50%），上下左右对称居中
+
 ## Open Questions（v2 再议）
 
 - 竖排（右起竖行）开关

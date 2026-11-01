@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Writ</title>
+<script>
+  // 原生 WindowInsets 注入点（MainActivity 调用）；老 WebView env() 为 0 时的可靠安全区来源
+  window.__setInsets = (top, bottom) => {
+    const s = document.documentElement.style;
+    s.setProperty('--safe-top', top + 'px');
+    s.setProperty('--safe-bottom', bottom + 'px');
+  };
+</script>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="writ.css">
 </head>

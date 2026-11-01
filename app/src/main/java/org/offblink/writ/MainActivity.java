@@ -43,6 +43,17 @@ public class MainActivity extends AppCompatActivity {
         web.setWebViewClient(new WebViewClient());
         web.addJavascriptInterface(new WritHost(this, web), "Writ");
 
+        // 安全区：老 WebView 的 env(safe-area-inset-*) 为 0（真机实测顶栏钻进状态栏），
+        // 由原生读系统栏/刘海 insets 注入 --safe-top/--safe-bottom（head 内联脚本已预置 __setInsets）
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
+            int sys = androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                    | androidx.core.view.WindowInsetsCompat.Type.displayCutout();
+            int top = insets.getInsets(sys).top;
+            int bottom = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars()).bottom;
+            web.evaluateJavascript("window.__setInsets&&window.__setInsets(" + top + "," + bottom + ")", null);
+            return insets;
+        });
+
         web.loadUrl("file:///android_asset/web/index.html");
     }
 
