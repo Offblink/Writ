@@ -81,7 +81,7 @@
       paper.style.height = '0px';
       return;
     }
-    const cssW = Math.min(paperWrap.clientWidth - 28, 520);
+    const cssW = Math.max(120, Math.min(paperWrap.clientWidth - 28, 520)); // 书写态下纸面隐藏（clientWidth 0），钳出个非零值即可
     const dpr = window.devicePixelRatio || 1;
     WritEngine.compose(paper, layout, cssW * dpr / layout.width);
     paper.style.width = cssW + 'px';
@@ -121,14 +121,27 @@
     render();
     flyTo(g);
     if (navigator.vibrate) navigator.vibrate(8);
+    if (items.length === 1) toast('已入列 · 点书写格右上 ⌄ 收起，预览整句');
   }
 
-  /** 字形从书写格弹入纸面槽位（M3 spatial spring） */
+  /* ---------- 收起 / 展开 ---------- */
+
+  $('#collapseBox').addEventListener('click', () => {
+    document.body.classList.add('preview');
+    requestAnimationFrame(render);
+  });
+
+  $('#expandBar').addEventListener('click', () => {
+    document.body.classList.remove('preview');
+    requestAnimationFrame(render);
+  });
+
+  /** 字形从书写格弹向收起按钮，淡出「入列」（书写态下预览隐藏，纸面不可作目标） */
   function flyTo(g) {
     if (reduceMotion || !lastLayout) return;
-    const p = lastLayout.placements[lastLayout.placements.length - 1];
+    if (document.body.classList.contains('preview')) return; // 收起态无书写，理论不达
     const boxRect = boxWrap.getBoundingClientRect();
-    const paperRect = paper.getBoundingClientRect();
+    const dst = $('#collapseBox').getBoundingClientRect();
     const flyer = document.createElement('canvas');
     flyer.className = 'flyer';
     flyer.width = g.w;
@@ -139,12 +152,12 @@
     flyer.style.width = boxRect.width + 'px';
     flyer.style.height = boxRect.height + 'px';
     document.body.appendChild(flyer);
-    const tx = paperRect.left + p.x * paperCssScale;
-    const ty = paperRect.top + p.y * paperCssScale;
-    const scale = (p.w * paperCssScale) / boxRect.width;
+    const scale = 0.26;
+    const dx = dst.left + dst.width / 2 - boxRect.left - (boxRect.width * scale) / 2;
+    const dy = dst.top + dst.height / 2 - boxRect.top - (boxRect.height * scale) / 2;
     const anim = flyer.animate([
       { transform: 'translate(0,0) scale(1)', opacity: 1 },
-      { transform: `translate(${tx - boxRect.left}px, ${ty - boxRect.top}px) scale(${scale})`, opacity: .9 }
+      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0 }
     ], { duration: 340, easing: 'cubic-bezier(.34,1.56,.64,1)' });
     anim.onfinish = () => flyer.remove();
   }

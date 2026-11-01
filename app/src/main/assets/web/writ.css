@@ -102,7 +102,55 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
 
 /* ---------- 书写格 ---------- */
 
-.writer { padding: 8px 0 4px; }
+.writer {
+  padding: 8px 0 4px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+/* 书写态（默认）：预览隐藏，书写格占满余高；收起态见 body.preview */
+body:not(.preview) .paper-wrap { display: none; }
+body.preview .box-wrap { display: none; }
+body.preview .writer { flex: 0 0 auto; justify-content: flex-start; }
+body.preview .expand-bar { display: flex; }
+body:not(.preview) .expand-bar { display: none; }
+
+/* 收起按钮：书写格右上角 */
+.box-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--m3-sc);
+  color: var(--m3-on-surface-variant);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(30, 30, 60, .14);
+  z-index: 2;
+  transition: transform .18s var(--spring), background .15s var(--damped);
+}
+.box-toggle:active { transform: scale(.9); background: var(--m3-sc-high); }
+
+/* 展开条：收起态下书写区只剩这一条 */
+.expand-bar {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px auto 8px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 21px;
+  background: var(--m3-sc);
+  color: var(--m3-on-surface-variant);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(30, 30, 60, .1);
+  transition: transform .18s var(--spring), background .15s var(--damped);
+}
+.expand-bar:active { transform: scale(.96); background: var(--m3-sc-high); }
 
 .box-wrap {
   position: relative;
@@ -146,7 +194,7 @@ button { font: inherit; border: 0; background: none; color: inherit; cursor: poi
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 4px 2px;
+  padding: 8px 4px; /* 纵向 8px ≥ active 素环溢出的 5px，防滚动容器上下裁环 */
   scrollbar-width: none;
 }
 .swatches::-webkit-scrollbar { display: none; }
